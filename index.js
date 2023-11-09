@@ -28,6 +28,13 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+//send password reset email
+const sendPasswordResetEmail = (email, resetLink) => {
+  console.log(`Sending password reset email to: ${email}`);
+  console.log(`Reset link: ${resetLink}`);
+};
+
 //login endpoint
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -40,6 +47,23 @@ app.post("/login", (req, res) => {
 
   const accessToken = jwt.sign({ username: user.username, id: user.id }, secretKey);
   res.json({ user: { id: user.id, username: user.username }, accessToken });
+});
+
+//forgot password endpoint
+app.post("/forgot-password", (req, res) => {
+  const { email } = req.body;
+
+  const user = users.find((u) => u.email === email);
+
+  if (!user) {
+    return res.sendStatus(404);
+  }
+
+  const resetLink = "http://reset-link.com";
+
+  sendPasswordResetEmail(email, resetLink);
+
+  res.sendStatus(200);
 });
 
 //create new user endpoint
