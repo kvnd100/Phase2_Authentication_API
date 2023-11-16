@@ -2,12 +2,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const app = express();
+const cors = require("cors");
+
 app.use(bodyParser.json());
+app.use(cors());
 
 const secretKey = "secret_key";
 const users = [
-  { id: 1, username: "kavindu", password: "password" },
-  { id: 2, username: "test", password: "test" },
+  { id: 1, username: "kavindu", password: "password", role: "Admin" },
+  { id: 2, username: "test", password: "test", role: "Passenger" },
+  { id: 2, username: "test2", password: "test2", role: "Terminal Agent" },
 ];
 
 const PORT = 3000;
@@ -45,8 +49,11 @@ app.post("/login", (req, res) => {
     return res.sendStatus(404);
   }
 
-  const accessToken = jwt.sign({ username: user.username, id: user.id }, secretKey);
-  res.json({ user: { id: user.id, username: user.username }, accessToken });
+  const accessToken = jwt.sign(
+    { username: user.username, id: user.id, role: user.role },
+    secretKey
+  );
+  res.json({ user: { id: user.id, username: user.username, role: user.role }, accessToken });
 });
 
 //forgot password endpoint
@@ -82,6 +89,7 @@ app.post("/users", authenticateToken, (req, res) => {
 
 //get all users endpoint
 app.get("/users", authenticateToken, (req, res) => {
+  console.log("test");
   res.json(users);
 });
 
@@ -89,7 +97,6 @@ app.get("/users", authenticateToken, (req, res) => {
 app.put("/users/:id", authenticateToken, (req, res) => {
   const userId = parseInt(req.params.id);
   const userIndex = users.findIndex((u) => u.id === userId);
-
   if (userIndex === -1) {
     return res.sendStatus(404);
   }
