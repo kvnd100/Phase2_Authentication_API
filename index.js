@@ -3,16 +3,36 @@ const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 const app = express();
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 
 app.use(bodyParser.json());
 app.use(cors());
 
 const secretKey = "secret_key";
 const users = [
-  { id: 1, username: "kavindu", password: "password", role: "Admin" },
-  { id: 2, username: "test", password: "test", role: "Passenger" },
-  { id: 2, username: "test2", password: "test2", role: "Terminal Agent" },
+  {
+    id: 1,
+    username: "kavindu",
+    password: "password",
+    role: "Admin",
+    email: "kvndranasinghe@gmail.com",
+  },
+  { id: 2, username: "test", password: "test", role: "Passenger", email: "test@example.com" },
+  {
+    id: 3,
+    username: "test2",
+    password: "test2",
+    role: "Terminal Agent",
+    email: "roy123harrper@gmail.com",
+  },
 ];
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "email",
+    pass: "password",
+  },
+});
 
 const PORT = 3000;
 //authenticate middleware
@@ -35,9 +55,42 @@ const authenticateToken = (req, res, next) => {
 
 //send password reset email
 const sendPasswordResetEmail = (email, resetLink) => {
-  console.log(`Sending password reset email to: ${email}`);
-  console.log(`Reset link: ${resetLink}`);
+  const mailOptions = {
+    from: "kvndranasinghe@gmail.com",
+    to: email,
+    subject: "Password Reset",
+    html: `<p>Click the following link to reset your password: <a href="${resetLink}">${resetLink}</a></p>`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.error("Error sending password reset email:", error);
+    }
+    console.log("Password reset email sent:", info.response);
+  });
 };
+
+app.post("/reset-password", (req, res) => {
+  const { token, newPassword } = req.body;
+
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      return res.sendStatus(401);
+    }
+
+    const userEmail = decoded.email;
+
+    const user = users.find((u) => u.email === userEmail);
+
+    if (!user) {
+      return res.sendStatus(404);
+    }
+
+    user.password = newPassword;
+
+    res.sendStatus(200);
+  });
+});
 
 //login endpoint
 app.post("/login", (req, res) => {
@@ -59,32 +112,18 @@ app.post("/login", (req, res) => {
 //forgot password endpoint
 app.post("/forgot-password", (req, res) => {
   const { email } = req.body;
-
   const user = users.find((u) => u.email === email);
-
   if (!user) {
     return res.sendStatus(404);
   }
 
-  const resetLink = "http://reset-link.com";
+  const resetToken = jwt.sign({ email: user.email }, secretKey, { expiresIn: "1h" });
+
+  const resetLink = `http://localhost:4200/reset-password?token=${resetToken}`;
 
   sendPasswordResetEmail(email, resetLink);
 
   res.sendStatus(200);
-});
-
-//create new user endpoint
-app.post("/users", authenticateToken, (req, res) => {
-  const { username, password } = req.body;
-
-  const newUser = {
-    id: users.length + 1,
-    username,
-    password,
-  };
-
-  users.push(newUser);
-  res.json(newUser);
 });
 
 //get all users endpoint
