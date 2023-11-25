@@ -57,7 +57,7 @@ const sendPasswordResetEmail = (email, resetLink) => {
 };
 //connect to mongodb
 mongoose.connect(
-  `mongodb+srv://kvndranasinghe:iizpkm0wquJhbLR7@cluster0.idfauik.mongodb.net/airlines?retryWrites=true&w=majority`
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.idfauik.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
 );
 
 const db = mongoose.connection;
