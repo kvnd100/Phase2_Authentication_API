@@ -6,6 +6,8 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const User = require("./model/user");
+require("dotenv").config();
+const bcrypt = require("bcrypt");
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -31,6 +33,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, secretKey, (err, user) => {
     if (err) {
+      console.log(err);
       return res.sendStatus(404);
     }
 
@@ -95,10 +98,16 @@ app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await User.findOne({ username, password });
+    const user = await User.findOne({ username });
 
     if (!user) {
       return res.sendStatus(404);
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.sendStatus(401);
     }
 
     const accessToken = jwt.sign(
@@ -190,7 +199,7 @@ app.delete("/users/:id", authenticateToken, async (req, res) => {
 });
 
 // create user endpoint
-app.post("/register", async (req, res) => {
+app.post("/register", authenticateToken, async (req, res) => {
   const { username, password, role, email } = req.body;
   const validRoles = ["admin", "terminal agent", "passenger"];
 
@@ -202,7 +211,9 @@ app.post("/register", async (req, res) => {
     if (!validRoles.includes(role.toLowerCase())) {
       return res.status(400).json({ error: "Invalid role." });
     }
-    const newUser = new User({ username, password, role, email });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ username, password: hashedPassword, role, email });
     await newUser.save();
 
     res.status(201).json(newUser);
