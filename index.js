@@ -111,7 +111,7 @@ app.post("/login", async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { username: user.username, id: user.id, role: user.role },
+      { username: user.username, id: user.id, role: user.role, email: user.email },
       secretKey
     );
 
@@ -238,6 +238,11 @@ app.get("/users/:id", authenticateToken, async (req, res) => {
     console.error("Error getting user by ID:", error);
     res.sendStatus(500);
   }
+});
+
+app.get("/get-user-details", authenticateToken, (req, res) => {
+  const userDetails = req.user;
+  res.json(userDetails);
 });
 
 app.listen(PORT, () => {
