@@ -33,6 +33,36 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const dummyFlights = [
+  {
+    flightNumber: "FLT001",
+    route: "New York to Los Angeles",
+    departureTime: "2023-12-01 08:00 AM",
+    arrivalTime: "2023-12-01 11:00 AM",
+    aircraft: "Boeing 737",
+    flightPlan: [
+      { location: "New York", expectedTime: 800 },
+      { location: "Stop 1", expectedTime: 900 },
+      { location: "Stop 2", expectedTime: 950 },
+      { location: "Stop 3", expectedTime: 1000 },
+      { location: "Destination", expectedTime: 1100 },
+    ],
+  },
+  {
+    flightNumber: "FLT002",
+    route: "New York to Los Angeles",
+    departureTime: "2023-12-01 11:00 AM",
+    arrivalTime: "2023-12-01 02:00 PM",
+    aircraft: "Boeing 737",
+    flightPlan: [
+      { location: "New York", expectedTime: 900 },
+      { location: "Stop 1", expectedTime: 1000 },
+      { location: "Stop 2", expectedTime: 1050 },
+      { location: "Stop 3", expectedTime: 1100 },
+      { location: "Destination", expectedTime: 1200 },
+    ],
+  },
+];
 const PORT = 3000;
 //authenticate middleware
 const authenticateToken = (req, res, next) => {
@@ -370,6 +400,31 @@ app.put(
     }
   }
 );
+app.get("/flights", authenticateToken, (req, res) => {
+  res.json(dummyFlights);
+});
+
+app.post("/flights/search", authenticateToken, (req, res) => {
+  const { departure, destination } = req.body;
+
+  if (departure || destination) {
+    const searchResults = dummyFlights.filter((flight) => {
+      const [flightDeparture, flightDestination] = flight.route
+        .toLowerCase()
+        .split("to")
+        .map((part) => part.trim());
+
+      const departureMatches = flightDeparture === departure.toLowerCase().trim();
+      const destinationMatches = flightDestination === destination.toLowerCase().trim();
+
+      return departureMatches || destinationMatches;
+    });
+
+    res.json(searchResults);
+  } else {
+    res.json([]);
+  }
+});
 
 app.use((req, res) => {
   res.status(404).send("Not Found");
