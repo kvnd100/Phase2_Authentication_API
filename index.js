@@ -245,6 +245,36 @@ app.get("/get-user-details", authenticateToken, (req, res) => {
   res.json(userDetails);
 });
 
+//get statistics data
+
+app.get("/statistics", authenticateToken, (req, res) => {
+  const requestedYear = parseInt(req.query.year) || new Date().getFullYear();
+  const availableYears = [2023, 2022];
+  if (!availableYears.includes(requestedYear)) {
+    return res.status(404).json({ error: "Data not available for the requested year." });
+  }
+  const financialReportData = {
+    2023: [100000, 150000, 200000, 180000, 250000],
+    2022: [90000, 140000, 190000, 170000, 240000],
+  };
+  const passengerStatisticsData = {
+    2023: [500, 800, 1200, 1000, 1500],
+    2022: [450, 750, 1100, 900, 1400],
+  };
+  const operationalPerformanceData = {
+    2023: [90, 85, 92, 88, 94],
+    2022: [88, 82, 90, 85, 91],
+  };
+
+  res.json({
+    chartData: {
+      financialReportData: financialReportData[requestedYear],
+      passengerStatisticsData: passengerStatisticsData[requestedYear],
+      operationalPerformanceData: operationalPerformanceData[requestedYear],
+    },
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
